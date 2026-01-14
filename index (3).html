@@ -1,0 +1,1536 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Annual Assessment Dashboard V8.14</title>
+
+  <!-- Google Fonts: Quicksand -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- TailwindCSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  
+  <!-- Chart.js Data Labels Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+  <!-- SheetJS (Full Version) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    /* --- CORE VARIABLES (Default: Slight Gray) --- */
+    :root {
+      --bg-color: #E0DED8;
+      --card-bg: #F5F4F2;
+      --text-main: #1A1A1A;
+      --text-sub: #444444;
+      --border-color: #B5B5B5;
+      
+      --brand-main: #245B61;
+      --brand-sub: #32938B;
+      --brand-positive: #26764A;
+      --brand-negative: #AA2E2E;
+      --brand-accent: #D9A940;
+      
+      --text-blue: #0277BD; 
+    }
+
+    /* --- FONTS --- */
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Quicksand', 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', sans-serif;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* --- COMPONENTS --- */
+    .dashboard-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .dashboard-card:hover {
+      box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+      border-color: var(--brand-main);
+    }
+
+    .kpi-main { border-top: 5px solid var(--brand-main); }
+    .kpi-sub { border-top: 5px solid var(--brand-sub); }
+    .kpi-positive { border-top: 5px solid var(--brand-positive); }
+
+    .std-input {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 14px;
+      width: 100%;
+      outline: none;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+    .std-input:focus {
+      border-color: var(--brand-main);
+      box-shadow: 0 0 0 2px rgba(0,0,0, 0.1); 
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 300px;
+      width: 100%;
+      background: transparent; 
+    }
+    
+    .gantt-wrapper {
+      position: relative;
+      height: 400px;
+      width: 100%;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-sub);
+      border: 1px solid var(--border-color);
+      transition: all 0.2s;
+      position: relative; 
+    }
+    .icon-btn:hover, .icon-btn.active {
+      background-color: var(--brand-main);
+      color: #FFFFFF;
+      border-color: var(--brand-main);
+    }
+
+    .icon-btn:hover::after {
+      content: attr(title); 
+      position: absolute;
+      top: 100%; 
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 8px;
+      background-color: #333333;
+      color: #FFFFFF;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      z-index: 100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      pointer-events: none;
+      opacity: 0;
+      animation: fadeIn 0.2s forwards;
+    }
+    .icon-btn:hover::before {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 3px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent transparent #333333 transparent;
+      z-index: 100;
+      opacity: 0;
+      animation: fadeIn 0.2s forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .lang-switch {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      color: var(--text-sub);
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      transition: all 0.2s;
+    }
+    .lang-switch:hover {
+      border-color: var(--brand-main);
+      color: var(--brand-main);
+    }
+
+    /* Table */
+    .data-table th {
+      background-color: rgba(0,0,0,0.05);
+      color: var(--brand-main);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      padding: 10px;
+      border-bottom: 2px solid var(--border-color);
+      white-space: nowrap;
+    }
+    .data-table td {
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px;
+      font-size: 12px;
+      color: var(--text-main);
+      vertical-align: top;
+    }
+    .data-table tr:hover {
+      background-color: rgba(128,128,128,0.05);
+    }
+    
+    .hl-list {
+      margin: 0;
+      padding-left: 1.2em;
+      list-style-type: disc;
+    }
+    .hl-list li {
+      margin-bottom: 4px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); z-index: 50;
+      display: none; align-items: center; justify-content: center;
+    }
+    .modal-box {
+      background: var(--card-bg); padding: 24px; border-radius: 12px;
+      max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      border: 1px solid var(--border-color);
+    }
+    .modal-box-lg { max-width: 600px; }
+
+    /* Gantt Empty State */
+    .gantt-empty {
+      text-align: center;
+      color: var(--text-sub);
+      padding: 20px;
+      border: 2px dashed var(--border-color);
+      border-radius: 8px;
+      background-color: rgba(0,0,0,0.02);
+      width: 80%;
+    }
+
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: var(--brand-sub); }
+    
+    /* Color Input Styling */
+    .color-input-group { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .color-input-group label { flex: 1; font-size: 12px; font-weight: 500; color: var(--text-main); }
+    .color-preview { width: 30px; height: 30px; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; padding: 0; background: none; }
+    .color-hex { width: 80px; font-family: monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <!-- Modal: Google Drive Link -->
+  <div id="driveModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold mb-2" style="color: var(--text-main);">Import from Google Drive</h3>
+      <p class="text-xs mb-4" style="color: var(--text-sub);">Please paste a <b>public</b> Google Sheet link.</p>
+      <input id="gSheetUrl" class="std-input mb-4" value="https://docs.google.com/spreadsheets/d/1Bpw5hltxat4uI0wJNgaUzaZOp-PrYba9NSCFP7VOcCU/edit?usp=sharing" placeholder="https://docs.google.com/spreadsheets/d/..." />
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('driveModal')" class="px-4 py-2 rounded text-xs font-bold" style="color: var(--text-sub);">Cancel</button>
+        <button onclick="loadGoogleSheet()" class="px-4 py-2 rounded text-xs font-bold text-white" style="background-color: var(--brand-main);">Load Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Custom Colors -->
+  <div id="customColorModal" class="modal-overlay">
+    <div class="modal-box modal-box-lg">
+      <h3 class="text-lg font-bold mb-2" style="color: var(--text-main);">Customize Theme Colors</h3>
+      <p class="text-xs mb-4" style="color: var(--text-sub);">Adjust HEX codes. Charts will automatically adapt to these settings.</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2 mb-4">
+          <!-- Backgrounds -->
+          <div>
+              <h4 class="text-xs font-bold uppercase mb-2" style="color: var(--brand-sub);">Backgrounds</h4>
+              <div class="color-input-group"><label>Page Background</label><input type="color" id="cp_bg" class="color-preview"><input type="text" id="txt_bg" class="std-input color-hex"></div>
+              <div class="color-input-group"><label>Card Background</label><input type="color" id="cp_card" class="color-preview"><input type="text" id="txt_card" class="std-input color-hex"></div>
+              <div class="color-input-group"><label>Border Color</label><input type="color" id="cp_border" class="color-preview"><input type="text" id="txt_border" class="std-input color-hex"></div>
+          </div>
+          <!-- Text -->
+          <div>
+              <h4 class="text-xs font-bold uppercase mb-2" style="color: var(--brand-sub);">Typography</h4>
+              <div class="color-input-group"><label>Main Text</label><input type="color" id="cp_textMain" class="color-preview"><input type="text" id="txt_textMain" class="std-input color-hex"></div>
+              <div class="color-input-group"><label>Sub/Label Text</label><input type="color" id="cp_textSub" class="color-preview"><input type="text" id="txt_textSub" class="std-input color-hex"></div>
+              <div class="color-input-group"><label>Link/Blue Text</label><input type="color" id="cp_blue" class="color-preview"><input type="text" id="txt_blue" class="std-input color-hex"></div>
+          </div>
+          <!-- Branding -->
+          <div>
+              <h4 class="text-xs font-bold uppercase mb-2" style="color: var(--brand-sub);">Brand Identity</h4>
+              <div class="color-input-group"><label>Brand Main</label><input type="color" id="cp_main" class="color-preview"><input type="text" id="txt_main" class="std-input color-hex"></div>
+              <div class="color-input-group"><label>Brand Sub</label><input type="color" id="cp_sub" class="color-preview"><input type="text" id="txt_sub" class="std-input color-hex"></div>
+              <div class="color-input-group"><label>Accent (Gold/Yellow)</label><input type="color" id="cp_accent" class="color-preview"><input type="text" id="txt_accent" class="std-input color-hex"></div>
+          </div>
+          <!-- Status -->
+          <div>
+              <h4 class="text-xs font-bold uppercase mb-2" style="color: var(--brand-sub);">Status Indication</h4>
+              <div class="color-input-group"><label>Positive (Green)</label><input type="color" id="cp_pos" class="color-preview"><input type="text" id="txt_pos" class="std-input color-hex"></div>
+              <div class="color-input-group"><label>Negative (Red)</label><input type="color" id="cp_neg" class="color-preview"><input type="text" id="txt_neg" class="std-input color-hex"></div>
+          </div>
+      </div>
+
+      <div class="flex justify-end gap-2 border-t pt-4" style="border-color: var(--border-color);">
+        <button onclick="closeModal('customColorModal')" class="px-4 py-2 rounded text-xs font-bold" style="color: var(--text-sub);">Cancel</button>
+        <button onclick="applyCustomColors()" class="px-4 py-2 rounded text-xs font-bold text-white" style="background-color: var(--brand-main);">Apply & Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation -->
+  <nav class="max-w-[1600px] mx-auto px-6 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
+    
+    <!-- Left: Brand + Controls -->
+    <div class="flex flex-col sm:flex-row items-center gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-lg bg-[#2A6A70] flex items-center justify-center text-white shadow-md" style="background-color: var(--brand-main);">
+          <i class="fa-solid fa-chart-pie text-xl"></i>
+        </div>
+        <div>
+          <h1 id="lblTitle" class="text-2xl font-bold" style="color: var(--text-main);">Project Dashboard V8.14</h1>
+          <p id="lblSubtitle" class="text-xs" style="color: var(--text-sub);">Annual Assessment System</p>
+        </div>
+      </div>
+
+      <!-- Controls Group -->
+      <div class="flex gap-2">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border" style="background-color: var(--card-bg); border-color: var(--border-color);">
+          <button class="icon-btn" onclick="applyTheme('light')" title="Light (Cloud Dancer)"><i class="fa-solid fa-sun"></i></button>
+          <button class="icon-btn active" onclick="applyTheme('slightGray')" title="Slight Gray"><i class="fa-solid fa-cloud"></i></button>
+          <button class="icon-btn" onclick="applyTheme('dark')" title="Nature Green (New)"><i class="fa-solid fa-leaf"></i></button>
+          <button class="icon-btn" onclick="applyTheme('extraDark')" title="Extra Dark (Night)"><i class="fa-solid fa-moon"></i></button>
+          <button class="icon-btn" onclick="applyTheme('creative')" title="Vibrant Artist (Updated)"><i class="fa-solid fa-palette"></i></button>
+          <div class="w-px h-4 bg-gray-300 mx-1"></div>
+          <button class="icon-btn" onclick="openCustomColorModal()" title="Custom Theme Settings"><i class="fa-solid fa-sliders"></i></button>
+        </div>
+
+        <button id="btnLang" class="lang-switch" onclick="toggleLang()">
+          <i class="fa-solid fa-globe mr-1"></i> EN / 繁中
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Data Sources -->
+    <div class="px-4 py-2 rounded-lg border shadow-sm flex items-center gap-4" style="background-color: var(--card-bg); border-color: var(--border-color);">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--brand-sub);"></span>
+        <span id="lblDataSource" class="text-xs font-bold uppercase" style="color: var(--brand-main);">Data Source</span>
+      </div>
+      <div class="h-6 w-px" style="background-color: var(--border-color);"></div>
+      
+      <label class="cursor-pointer flex items-center gap-2 hover:opacity-80 px-2 py-1.5 rounded transition" title="Upload Local File">
+        <i class="fa-solid fa-file-upload" style="color: var(--brand-main);"></i>
+        <span class="text-xs font-bold" style="color: var(--text-main);">Local</span>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.pdf" class="hidden" />
+      </label>
+
+      <div class="h-4 w-px" style="background-color: var(--border-color);"></div>
+
+      <button onclick="openModal('driveModal')" class="cursor-pointer flex items-center gap-2 hover:opacity-80 px-2 py-1.5 rounded transition" title="Link Google Sheet">
+        <i class="fa-brands fa-google-drive" style="color: var(--brand-main);"></i>
+        <span class="text-xs font-bold" style="color: var(--text-main);">Drive</span>
+      </button>
+
+      <span id="fileStatus" class="text-xs font-mono ml-2" style="color: var(--text-sub);">No file</span>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="max-w-[1600px] mx-auto px-6 pb-12 space-y-6">
+
+    <!-- Global Filters -->
+    <div class="dashboard-card">
+      <div class="flex justify-between mb-2">
+        <span class="text-xs font-bold uppercase" style="color: var(--text-sub)">Global Filters (KPIs & Charts)</span>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div class="md:col-span-1"><label id="lblOwner" class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Owner</label><select id="fOwner" class="std-input"></select></div>
+        <div class="md:col-span-1"><label id="lblStatus" class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Status</label><select id="fStatus" class="std-input"></select></div>
+        <div class="md:col-span-1"><label id="lblCategory" class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Category</label><select id="fCategory" class="std-input"></select></div>
+        <div class="md:col-span-1"><label id="lblCluster" class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Cluster</label><select id="fCluster" class="std-input"></select></div>
+        <div class="md:col-span-2">
+          <label id="lblMonth" class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Period (Month)</label>
+          <div class="flex items-center gap-2">
+            <select id="fStartMonth" class="std-input"></select>
+            <span style="color: var(--text-sub); font-size: 12px;">to</span>
+            <select id="fEndMonth" class="std-input"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="dashboard-card kpi-main relative overflow-hidden">
+        <h3 id="lblTotalItems" class="text-xs font-bold uppercase" style="color: var(--text-sub);">Total Items</h3>
+        <p id="kTotal" class="text-5xl font-bold mt-2 tracking-tight" style="color: var(--brand-main);">0</p>
+        <p id="lblTotalDesc" class="text-xs mt-2" style="color: var(--text-sub);">All Projects Loaded</p>
+        <i class="fa-solid fa-layer-group absolute right-4 top-6 text-8xl opacity-10 pointer-events-none" style="color: var(--brand-main);"></i>
+      </div>
+
+      <div class="dashboard-card kpi-sub relative overflow-hidden">
+        <h3 id="lblCompleted" class="text-xs font-bold uppercase" style="color: var(--text-sub);">Completed</h3>
+        <p id="kClosed" class="text-5xl font-bold mt-2 tracking-tight" style="color: var(--brand-sub);">0</p>
+        <p id="lblCompletedDesc" class="text-xs mt-2" style="color: var(--text-sub);">Status: "Closed"</p>
+        <i class="fa-solid fa-check-circle absolute right-4 top-6 text-8xl opacity-10 pointer-events-none" style="color: var(--brand-sub);"></i>
+      </div>
+
+      <div class="dashboard-card kpi-positive relative overflow-hidden">
+        <h3 id="lblOnTimeRate" class="text-xs font-bold uppercase" style="color: var(--text-sub);">On-Time Rate</h3>
+        <p id="kOnTime" class="text-5xl font-bold mt-2 tracking-tight" style="color: var(--brand-positive);">0%</p>
+        <p id="lblOnTimeDesc" class="text-xs mt-2" style="color: var(--text-sub);">Due Date == Revision_1</p>
+        <i class="fa-solid fa-stopwatch absolute right-4 top-6 text-8xl opacity-10 pointer-events-none" style="color: var(--brand-positive);"></i>
+      </div>
+    </div>
+
+    <!-- Charts Section 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-4 dashboard-card flex flex-col">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h3 id="lblStatusDist" class="text-base font-bold" style="color: var(--text-main);">Status Distribution</h3>
+            <p id="lblStatusSub" class="text-xs" style="color: var(--text-sub);">Overview by status</p>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="cStatus"></canvas>
+        </div>
+      </div>
+
+      <div class="lg:col-span-8 dashboard-card flex flex-col">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h3 id="lblCatAnalysis" class="text-base font-bold" style="color: var(--text-main);">Category Analysis</h3>
+            <p id="lblCatSub" class="text-xs" style="color: var(--text-sub);">Breakdown by category/cluster</p>
+          </div>
+          <div class="p-1 rounded-md flex gap-1 border" style="background-color: var(--bg-color); border-color: var(--border-color);">
+            <button id="btnCat" class="px-3 py-1 text-xs font-bold rounded text-white" style="background-color: var(--brand-main);">Category</button>
+            <button id="btnClust" class="px-3 py-1 text-xs font-bold rounded hover:bg-white" style="color: var(--text-sub);">Cluster</button>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="cCat"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section 2 (Metric Toggle) -->
+    <div class="dashboard-card">
+      <div class="mb-4 flex justify-between items-start">
+        <div>
+            <h3 id="lblOwnerCont" class="text-base font-bold" style="color: var(--text-main);">Owner Contribution</h3>
+            <p id="lblOwnerSub" class="text-xs" style="color: var(--text-sub);">Project volume by owner</p>
+        </div>
+        <div class="flex p-1 rounded-md border" style="background-color: var(--bg-color); border-color: var(--border-color);">
+            <button id="btnOwnerCount" class="px-3 py-1 text-xs font-bold rounded text-white" style="background-color: var(--brand-main);" onclick="setOwnerMetric('count')">Count</button>
+            <button id="btnOwnerDur" class="px-3 py-1 text-xs font-bold rounded hover:bg-white" style="color: var(--text-sub);" onclick="setOwnerMetric('duration')">Duration</button>
+        </div>
+      </div>
+      <div class="chart-wrapper" style="height: 350px;">
+        <canvas id="cOwner"></canvas>
+      </div>
+    </div>
+
+    <!-- GANTT CHART -->
+    <div class="dashboard-card border-2" style="border-color: var(--brand-main);">
+      <div class="mb-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 id="lblGantt" class="text-base font-bold" style="color: var(--text-main);">Project Schedule (Gantt)</h3>
+                <p id="lblGanttSub" class="text-xs" style="color: var(--text-sub);">Timeline with Independent Filters</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btnWiz" onclick="generateWizSummary()" class="px-3 py-1 text-xs font-bold rounded text-white flex items-center gap-2 hover:opacity-90 shadow-sm transition-all" style="background-color: var(--brand-accent);">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="lblWizBtn">Wiz</span>
+                </button>
+                <span class="px-2 py-1 text-[10px] font-bold rounded text-white" style="background-color: var(--brand-main);">INDEPENDENT</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-2 mt-4 bg-opacity-10 p-3 rounded-lg" style="background-color: var(--bg-color);">
+             <div><label class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Owner</label><select id="gOwner" class="std-input text-xs"></select></div>
+             <div><label class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Status</label><select id="gStatus" class="std-input text-xs"></select></div>
+             <div><label class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Category</label><select id="gCategory" class="std-input text-xs"></select></div>
+             <div><label class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Cluster</label><select id="gCluster" class="std-input text-xs"></select></div>
+             <div class="md:col-span-2">
+                 <label class="block text-[10px] font-bold uppercase mb-1" style="color: var(--brand-main);">Period</label>
+                 <div class="flex items-center gap-1">
+                    <select id="gStartMonth" class="std-input text-xs"></select>
+                    <span style="color: var(--text-sub);">-</span>
+                    <select id="gEndMonth" class="std-input text-xs"></select>
+                 </div>
+             </div>
+        </div>
+      </div>
+
+      <div class="gantt-wrapper" id="ganttContainer">
+        <div id="ganttEmpty" class="gantt-empty">
+          <i class="fa-solid fa-filter mb-2 text-2xl"></i><br>
+          Select filters above to generate the schedule.
+        </div>
+        <canvas id="cGantt" style="display: none;"></canvas>
+      </div>
+    </div>
+
+    <!-- WIZ SUMMARY -->
+    <div id="wizBlock" class="dashboard-card hidden border-l-4 transition-all duration-500" style="border-left-color: var(--brand-accent);">
+        <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm" style="background-color: var(--brand-accent);">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h3 id="lblWizTitle" class="text-base font-bold" style="color: var(--text-main);">Wiz Summary</h3>
+                    <p id="lblWizSub" class="text-xs" style="color: var(--text-sub);">AI-generated insights based on current Gantt view</p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('wizBlock').classList.add('hidden')" class="text-xs hover:opacity-70" style="color: var(--text-sub);">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+        <div id="wizContent" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+
+    <div class="dashboard-card flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <h3 id="lblEvidence" class="text-base font-bold" style="color: var(--text-main);">Evidence List</h3>
+        <div class="flex gap-2">
+          <input id="search" placeholder="Search..." class="std-input w-48" />
+          <button id="btnExport" class="bg-white border px-4 py-2 rounded-lg text-xs font-bold hover:opacity-80" style="border-color: var(--border-color); color: var(--brand-main);">
+            Export CSV
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto border rounded-lg max-h-[500px]" style="border-color: var(--border-color);">
+        <table class="w-full text-left border-collapse data-table">
+          <thead class="sticky top-0 z-10 shadow-sm" style="background-color: var(--card-bg);">
+            <tr>
+              <th id="thOwner">Owner</th>
+              <th id="thDesc" style="min-width: 450px;">Description</th> 
+              <th id="thStatus">Status</th>
+              <th id="thProgress">Progress</th> 
+              <th id="thCategory">Category</th>
+              <th id="thCluster">Cluster</th>
+              <th id="thDuration">Duration</th> 
+              <th id="thDeviation">Deviation</th>
+              <th id="thRev">Revision 1</th>
+              <th id="thOnTime">On Time?</th>
+              <th id="thHighlights">Highlight & Deliverables</th> 
+            </tr>
+          </thead>
+          <tbody id="tBody">
+            <tr><td colspan="11" class="text-center py-8" style="color: var(--text-sub);">No data loaded</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Feedback -->
+    <div class="dashboard-card">
+      <div class="flex justify-between items-center mb-3">
+        <h3 id="lblFeedback" class="text-base font-bold" style="color: var(--text-main);">Feedback</h3>
+        <div id="stars" class="flex gap-1 cursor-pointer" style="color: var(--border-color);"></div>
+      </div>
+      <div class="flex gap-3">
+        <input id="fbComment" class="std-input" placeholder="Add notes..." />
+        <button id="fbSave" class="text-white px-6 py-2 rounded-lg text-xs font-bold hover:opacity-80" style="background-color: var(--brand-main);">Save</button>
+      </div>
+      <p id="fbMsg" class="text-xs mt-2 h-4" style="color: var(--brand-positive);"></p>
+    </div>
+
+  </main>
+
+<script>
+/**
+ * DASHBOARD V8.14 - CATEGORY ANALYSIS UPGRADE
+ * - Category Analysis Chart now stacks by OWNER instead of STATUS
+ * - Colors for owners use Generic Palette rotation
+ */
+
+// --- 1. Themes & Constants ---
+const THEMES = {
+  light: { 
+    bg: '#F0EEE9', card: '#E7EAEE', textMain: '#2B2B6E', textSub: '#7D8090', border: '#AEB4C1', 
+    main: '#2B2B6E', sub: '#918A9E', positive: '#2E8F5A', negative: '#C03939', accent: '#CCAC8C',
+    blue: '#2B2B6E' 
+  },
+  slightGray: { 
+    bg: '#E0DED8', card: '#F5F4F2', textMain: '#1A1A1A', textSub: '#444444', border: '#B5B5B5', 
+    main: '#245B61', sub: '#32938B', positive: '#26764A', negative: '#AA2E2E', accent: '#D9A940',
+    blue: '#245B61' 
+  },
+  dark: { 
+    bg: '#DEE6E1', card: '#FCFCFC', textMain: '#262216', textSub: '#668177', border: '#BFC6B2', 
+    main: '#45CDA2', sub: '#668177', positive: '#45CDA2', negative: '#FF5C5C', accent: '#FFC44D',
+    blue: '#45CDA2' 
+  },
+  extraDark: {
+    bg: '#050505', card: '#101010', textMain: '#FFFFFF', textSub: '#D0D0D0', border: '#555555',
+    main: '#37B3AA', sub: '#79D3C9', positive: '#4FDC8A', negative: '#FF7070', accent: '#FFD166',
+    blue: '#37B3AA'
+  },
+  creative: {
+    bg: '#FAFAFA', card: '#FFFFFF', textMain: '#333333', textSub: '#666666', border: '#E5E7EB',
+    main: '#8B5CF6', sub: '#EC4899', positive: '#10B981', negative: '#EF4444', accent: '#F59E0B',
+    blue: '#6366F1'
+  }
+};
+
+const TEXT = {
+  en: {
+    title: "Project Dashboard V8.14", subtitle: "Annual Assessment System",
+    dataSource: "Data Source", import: "Load Excel / CSV",
+    owner: "Owner", status: "Status", category: "Category", cluster: "Cluster", month: "Period (Month)",
+    total: "Total Items", totalDesc: "All Projects Loaded",
+    completed: "Completed", completedDesc: "Status: 'Closed'",
+    onTime: "On-Time Rate", onTimeDesc: "Due Date == Revision_1",
+    statusDist: "Status Distribution", statusSub: "Overview by status",
+    catAnalysis: "Category Analysis", catSub: "Breakdown by category/cluster",
+    ownerCont: "Owner Contribution", ownerSub: "Project volume by owner",
+    gantt: "Project Schedule (Gantt)", ganttSub: "Timeline with Independent Filters",
+    evidence: "Evidence List", feedback: "Feedback", save: "Save",
+    thHighlights: "Highlights & Deliverables", thDesc: "Description", thProgress: "Progress",
+    wizBtn: "Wiz", wizTitle: "Wiz Summary", wizSub: "Insights based on current Gantt view",
+    wizTotalTime: "Total Working Days", wizProjects: "Active Projects", wizOwners: "Owners Involved", wizDeliv: "Project & Key Deliverables"
+  },
+  zh: {
+    title: "專案儀表板 V8.14", subtitle: "年度考核系統",
+    dataSource: "資料來源", import: "匯入 Excel / CSV",
+    owner: "負責人", status: "狀態", category: "類別", cluster: "群組", month: "期間 (月份)",
+    total: "總項目數", totalDesc: "已載入所有專案",
+    completed: "已結案", completedDesc: "狀態為 'Closed'",
+    onTime: "準時達成率", onTimeDesc: "原始到期日 == 修訂版 1",
+    statusDist: "狀態分佈", statusSub: "整體狀態概覽",
+    catAnalysis: "類別分析", catSub: "依類別/群組細分",
+    ownerCont: "負責人貢獻度", ownerSub: "依負責人統計案件量",
+    gantt: "專案時程 (Gantt)", ganttSub: "獨立篩選時間軸",
+    evidence: "證據清單", feedback: "回饋與建議", save: "儲存",
+    thHighlights: "重點與交付物", thDesc: "描述", thProgress: "進度",
+    wizBtn: "Wiz 助手", wizTitle: "Wiz 智慧摘要", wizSub: "基於目前甘特圖視角的洞察",
+    wizTotalTime: "總工作天數", wizProjects: "活躍專案", wizOwners: "參與負責人", wizDeliv: "專案描述與關鍵交付物"
+  }
+};
+
+// --- 2. Global Variables ---
+let currentLang = 'en';
+let PALETTE = { ...THEMES.slightGray, text: THEMES.slightGray.textMain, grid: THEMES.slightGray.border };
+let rawData = [];
+let filteredData = [];
+let chartRefs = {};
+let groupBy = 'Category';
+let ownerMetric = 'count';
+const filters = { owner: 'All', status: 'All', category: 'All', cluster: 'All', startMonth: 'All', endMonth: 'All', search: '' };
+const ganttFilters = { owner: 'All', status: 'All', category: 'All', cluster: 'All', startMonth: 'All', endMonth: 'All' };
+
+// --- 3. HELPER FUNCTIONS ---
+const $ = (id) => document.getElementById(id);
+
+// REGISTER CHART PLUGIN
+Chart.register(ChartDataLabels);
+
+function destroyChart(id) {
+  if (chartRefs[id]) {
+    chartRefs[id].destroy();
+    chartRefs[id] = null;
+  }
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'zh' : 'en';
+  if (currentLang === 'zh') {
+    document.body.style.fontFamily = "'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Quicksand', sans-serif";
+  } else {
+    document.body.style.fontFamily = "'Quicksand', 'Microsoft JhengHei', '微軟正黑體', sans-serif";
+  }
+  applyLanguage();
+  updateTable();
+  updateCharts();
+  updateWizIfVisible();
+}
+
+function updateWizIfVisible() {
+    if (!$('wizBlock').classList.contains('hidden')) {
+        generateWizSummary();
+    }
+}
+
+function applyLanguage() {
+  const t = TEXT[currentLang];
+  const setText = (id, text) => {
+    const el = $(id);
+    if (el) el.textContent = text;
+  };
+  setText('lblTitle', t.title);
+  setText('lblSubtitle', t.subtitle);
+  setText('lblDataSource', t.dataSource);
+  
+  const updateLabels = (prefix) => {
+      setText(prefix ? '' : 'lblOwner', t.owner);
+      setText(prefix ? '' : 'lblStatus', t.status);
+      setText(prefix ? '' : 'lblCategory', t.category);
+      setText(prefix ? '' : 'lblCluster', t.cluster);
+      setText(prefix ? '' : 'lblMonth', t.month);
+  }
+  updateLabels(); 
+
+  setText('lblTotalItems', t.total);
+  setText('lblTotalDesc', t.totalDesc);
+  setText('lblCompleted', t.completed);
+  setText('lblCompletedDesc', t.completedDesc);
+  setText('lblOnTimeRate', t.onTime);
+  setText('lblOnTimeDesc', t.onTimeDesc);
+  setText('lblStatusDist', t.statusDist);
+  setText('lblStatusSub', t.statusSub);
+  setText('lblCatAnalysis', t.catAnalysis);
+  setText('lblCatSub', t.catSub);
+  setText('lblOwnerCont', t.ownerCont);
+  setText('lblOwnerSub', t.ownerSub);
+  setText('lblGantt', t.gantt);
+  setText('lblGanttSub', t.ganttSub);
+  setText('lblEvidence', t.evidence);
+  setText('lblFeedback', t.feedback);
+  setText('fbSave', t.save);
+  
+  setText('lblWizBtn', t.wizBtn);
+  setText('lblWizTitle', t.wizTitle);
+  setText('lblWizSub', t.wizSub);
+  
+  setText('thOwner', t.thOwner);
+  setText('thDesc', t.thDesc);
+  setText('thStatus', t.thStatus);
+  setText('thCategory', t.thCategory);
+  setText('thCluster', t.thCluster);
+  setText('thDuration', t.thDuration);
+  setText('thDeviation', t.thDeviation);
+  setText('thRev', t.thRev);
+  setText('thOnTime', t.thOnTime);
+  setText('thHighlights', t.thHighlights);
+  setText('thProgress', t.thProgress); 
+}
+
+function applyTheme(themeName) {
+  const t = THEMES[themeName];
+  if(!t) return;
+  const root = document.documentElement;
+  // Apply all CSS variables
+  root.style.setProperty('--bg-color', t.bg);
+  root.style.setProperty('--card-bg', t.card);
+  root.style.setProperty('--text-main', t.textMain);
+  root.style.setProperty('--text-sub', t.textSub);
+  root.style.setProperty('--border-color', t.border);
+  root.style.setProperty('--brand-main', t.main);
+  root.style.setProperty('--brand-sub', t.sub);
+  root.style.setProperty('--brand-positive', t.positive);
+  root.style.setProperty('--brand-negative', t.negative);
+  root.style.setProperty('--brand-accent', t.accent);
+  root.style.setProperty('--text-blue', t.blue); 
+
+  // Update Global Palette for Charts
+  PALETTE.main = t.main;
+  PALETTE.sub = t.sub;
+  PALETTE.accent = t.accent;
+  PALETTE.positive = t.positive;
+  PALETTE.negative = t.negative;
+  PALETTE.text = t.textMain;
+  PALETTE.grid = t.border;
+  PALETTE.blue = t.blue;
+
+  // UI state for theme buttons
+  document.querySelectorAll('.icon-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.querySelector(`button[onclick="applyTheme('${themeName}')"]`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  if(filteredData && filteredData.length > 0) updateCharts();
+}
+
+// --- DYNAMIC CHART COLOR LOGIC ---
+const STATUS_COLORS = {
+    'closed': '#10B981',    
+    'processing': '#3B82F6',
+    'pending': '#EF4444',   
+    'draft': '#F59E0B',     
+    'review': '#8B5CF6'     
+};
+
+function getStatusColor(status) {
+    const s = (status || '').toLowerCase();
+    
+    // Explicit Semantic Mapping
+    if (s === 'closed') return PALETTE.positive;
+    if (s === 'processing') return PALETTE.blue;
+    if (s === 'pending') return PALETTE.negative;
+    if (s === 'draft') return PALETTE.accent;
+    
+    // Hash for others to pick from Brand/Accent pool
+    const pool = [PALETTE.main, PALETTE.sub, PALETTE.accent, PALETTE.blue, PALETTE.positive, PALETTE.negative];
+    let hash = 0;
+    for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+    return pool[Math.abs(hash) % pool.length];
+}
+
+function getGenericPalette(count) {
+    const pool = [PALETTE.main, PALETTE.sub, PALETTE.accent, PALETTE.blue, PALETTE.positive, PALETTE.negative];
+    const result = [];
+    for(let i=0; i<count; i++) {
+        result.push(pool[i % pool.length]);
+    }
+    return result;
+}
+
+// --- CUSTOM COLOR FUNCTIONS ---
+
+function openCustomColorModal() {
+    const styles = getComputedStyle(document.documentElement);
+    const getVal = (v) => styles.getPropertyValue(v).trim();
+    
+    const sync = (id, val) => {
+        $(id).value = val;
+        $(`txt_${id.split('_')[1]}`).value = val;
+        $(id).oninput = (e) => $(`txt_${id.split('_')[1]}`).value = e.target.value;
+        $(`txt_${id.split('_')[1]}`).oninput = (e) => $(id).value = e.target.value;
+    };
+
+    sync('cp_bg', getVal('--bg-color'));
+    sync('cp_card', getVal('--card-bg'));
+    sync('cp_border', getVal('--border-color'));
+    sync('cp_textMain', getVal('--text-main'));
+    sync('cp_textSub', getVal('--text-sub'));
+    sync('cp_blue', getVal('--text-blue'));
+    sync('cp_main', getVal('--brand-main'));
+    sync('cp_sub', getVal('--brand-sub'));
+    sync('cp_accent', getVal('--brand-accent'));
+    sync('cp_pos', getVal('--brand-positive'));
+    sync('cp_neg', getVal('--brand-negative'));
+
+    openModal('customColorModal');
+}
+
+function applyCustomColors() {
+    const root = document.documentElement;
+    const setVal = (id, varName) => {
+        const val = $(id).value;
+        root.style.setProperty(varName, val);
+        return val;
+    };
+
+    const cBg = setVal('cp_bg', '--bg-color');
+    const cCard = setVal('cp_card', '--card-bg');
+    setVal('cp_border', '--border-color');
+    const cText = setVal('cp_textMain', '--text-main');
+    setVal('cp_textSub', '--text-sub');
+    const cBlue = setVal('cp_blue', '--text-blue');
+    const cMain = setVal('cp_main', '--brand-main');
+    const cSub = setVal('cp_sub', '--brand-sub');
+    const cAcc = setVal('cp_accent', '--brand-accent');
+    const cPos = setVal('cp_pos', '--brand-positive');
+    const cNeg = setVal('cp_neg', '--brand-negative');
+
+    // Update Palette Global
+    PALETTE.main = cMain;
+    PALETTE.sub = cSub;
+    PALETTE.accent = cAcc;
+    PALETTE.positive = cPos;
+    PALETTE.negative = cNeg;
+    PALETTE.text = cText;
+    PALETTE.grid = $('cp_border').value;
+    PALETTE.blue = cBlue;
+
+    closeModal('customColorModal');
+    
+    document.querySelectorAll('.icon-btn').forEach(btn => btn.classList.remove('active'));
+    
+    if(filteredData.length > 0) updateCharts();
+    updateTable(); // Ensure table badges update
+    alert('Custom colors applied to all charts and UI!');
+}
+
+function populateSelect(id, key, targetFilterObj, callbackFn) {
+  const el = $(id);
+  if(!el) return;
+  const rawValues = rawData.map(d => d[key]).filter(v => v !== undefined && v !== null);
+  const vals = ['All', ...new Set(rawValues)].sort();
+  
+  el.innerHTML = vals.map(v => `<option value="${v}">${v}</option>`).join('');
+  el.onchange = (e) => {
+    if (id.includes('StartMonth')) targetFilterObj.startMonth = e.target.value;
+    else if (id.includes('EndMonth')) targetFilterObj.endMonth = e.target.value;
+    else targetFilterObj[key] = e.target.value;
+    if(callbackFn) callbackFn();
+  };
+}
+
+function parseDate(v) {
+  if (!v) return null;
+  if (typeof v === 'number') {
+    const d = XLSX.SSF.parse_date_code(v);
+    return new Date(Date.UTC(d.y, d.m - 1, d.d));
+  }
+  const d = new Date(String(v));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDate(d) {
+  return d ? d.toISOString().split('T')[0] : '-';
+}
+
+function shortName(text, len = 15) {
+  if(!text) return '';
+  return text.length > len ? text.substring(0, len) + '...' : text;
+}
+
+function formatBullets(text) {
+  if (!text) return '-';
+  let items = text.split(/\r?\n/).filter(i => i.trim() !== '');
+  if (items.length <= 1) {
+    items = text.split(/[•\-*]/).filter(i => i.trim() !== '');
+  }
+  if (items.length === 0) return text;
+  return `<ul class="hl-list">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+}
+
+function decodeBuffer(buffer) {
+  const data = new Uint8Array(buffer);
+  const utf8Decoder = new TextDecoder('utf-8', { fatal: false });
+  const utf8String = utf8Decoder.decode(data);
+  const hasMojibake = utf8String.includes('\uFFFD');
+  if (hasMojibake) {
+      const big5Decoder = new TextDecoder('big5');
+      return big5Decoder.decode(data);
+  }
+  return utf8String;
+}
+
+// --- 4. DATA PROCESSING ---
+
+async function loadGoogleSheet() {
+  const url = $('gSheetUrl').value.trim();
+  if(!url) return;
+  let csvUrl = url.replace(/\/edit.*$/, '/export?format=csv');
+  closeModal('driveModal');
+  $('fileStatus').textContent = "Downloading...";
+  try {
+    const response = await fetch(csvUrl);
+    if (!response.ok) throw new Error("Network response was not ok");
+    const arrayBuffer = await response.arrayBuffer();
+    const decodedString = decodeBuffer(arrayBuffer);
+    const wb = XLSX.read(decodedString, { type: "string" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+    processLoadedData(json);
+  } catch (error) {
+    console.error(error);
+    alert("Failed to load Google Sheet.");
+    $('fileStatus').textContent = "Error loading link";
+  }
+}
+
+function processData(json) {
+  return json
+    .map(row => {
+      const owner = (row['Owner'] || 'Unassigned').trim();
+      if (owner.toLowerCase() === 'unassigned') return null; 
+
+      const due = parseDate(row['Due Date']);
+      const rev = parseDate(row['Revision_1']);
+      
+      let isOnTime = true;
+      if (rev && due) {
+        if (rev.getTime() > due.getTime()) isOnTime = false;
+      }
+
+      const highlights = (row['Highlight & Deliverables'] || '').toString().trim(); 
+      let duration = 0;
+      const rawDur = row['Duration'];
+      if (rawDur !== undefined && rawDur !== null && rawDur !== '') {
+          duration = parseFloat(rawDur);
+          if(isNaN(duration)) duration = 0;
+      }
+
+      const deviation = row['Deviation']; 
+      const desc = (row['P.J Description'] || row['Description'] || '').toString();
+
+      let progressDisplay = '';
+      if (row['Progress'] !== undefined && row['Progress'] !== null) {
+          const rawP = String(row['Progress']).trim();
+          if (rawP !== '') progressDisplay = rawP;
+      } 
+      
+      if (progressDisplay === '') {
+          const s = (row['Status'] || '').trim().toLowerCase();
+          if (s === 'closed') progressDisplay = 'Completed';
+          else if (s === 'processing') progressDisplay = 'In Progress';
+          else if (s === 'pending') progressDisplay = 'Pending';
+          else progressDisplay = '-';
+      }
+
+      return {
+        owner: owner,
+        status: (row['Status'] || 'Unknown').trim(),
+        category: (row['Category'] || 'Other').trim(),
+        cluster: (row['Cluster'] || 'Other').trim(),
+        due: due, rev: rev, isOnTime: isOnTime, desc: desc,
+        highlights: highlights, duration: duration, deviation: deviation,
+        progressDisplay: progressDisplay, 
+        month: (due || rev) ? (due || rev).toISOString().slice(0, 7) : 'Unknown'
+      };
+    })
+    .filter(item => item !== null);
+}
+
+function processLoadedData(json) {
+    rawData = processData(json);
+    filteredData = [...rawData];
+    $('fileStatus').textContent = `${rawData.length} records loaded`;
+    
+    filters.startMonth = 'All'; filters.endMonth = 'All';
+    ganttFilters.startMonth = '2025-01'; ganttFilters.endMonth = '2025-12';
+
+    populateSelect('fOwner', 'owner', filters, runFilter);
+    populateSelect('fStatus', 'status', filters, runFilter);
+    populateSelect('fCategory', 'category', filters, runFilter);
+    populateSelect('fCluster', 'cluster', filters, runFilter);
+    populateSelect('fStartMonth', 'month', filters, runFilter);
+    populateSelect('fEndMonth', 'month', filters, runFilter);
+    
+    populateSelect('gOwner', 'owner', ganttFilters, updateGanttOnly);
+    populateSelect('gStatus', 'status', ganttFilters, updateGanttOnly);
+    populateSelect('gCategory', 'category', ganttFilters, updateGanttOnly);
+    populateSelect('gCluster', 'cluster', ganttFilters, updateGanttOnly);
+    populateSelect('gStartMonth', 'month', ganttFilters, updateGanttOnly);
+    populateSelect('gEndMonth', 'month', ganttFilters, updateGanttOnly);
+
+    $('fStartMonth').value = 'All'; $('fEndMonth').value = 'All';
+    const setIfExist = (id, val) => { const el = $(id); if (el.querySelector(`option[value="${val}"]`)) el.value = val; };
+    setIfExist('gStartMonth', '2025-01'); setIfExist('gEndMonth', '2025-12');
+    
+    $('search').oninput = (ev) => { filters.search = ev.target.value; runFilter(); };
+    
+    updateDashboard();
+    gsap.from('.dashboard-card', { y: 20, opacity: 0, duration: 0.5, stagger: 0.05 });
+}
+
+function runFilter() {
+  const q = filters.search.toLowerCase();
+  filteredData = rawData.filter(d => {
+    if(filters.owner !== 'All' && d.owner !== filters.owner) return false;
+    if(filters.status !== 'All' && d.status !== filters.status) return false;
+    if(filters.category !== 'All' && d.category !== filters.category) return false;
+    if(filters.cluster !== 'All' && d.cluster !== filters.cluster) return false;
+    if(filters.startMonth !== 'All' && d.month < filters.startMonth) return false;
+    if(filters.endMonth !== 'All' && d.month > filters.endMonth) return false;
+    if(q && !d.desc.toLowerCase().includes(q) && !d.owner.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  updateDashboard();
+}
+
+async function processFile(file) {
+  $('fileStatus').textContent = "Processing...";
+  if (file.name.toLowerCase().endsWith('.pdf')) {
+    alert("PDF Preview only."); $('fileStatus').textContent = "PDF Loaded"; return;
+  }
+  try {
+    const wb = await readFile(file);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+    processLoadedData(json);
+  } catch (err) {
+    console.error(err);
+    $('fileStatus').textContent = "Error reading file";
+  }
+}
+
+// --- 5. UI UPDATES ---
+
+function setOwnerMetric(metric) {
+    ownerMetric = metric;
+    // Update button visual state
+    if(metric === 'count') {
+        $('btnOwnerCount').style.backgroundColor = 'var(--brand-main)';
+        $('btnOwnerCount').style.color = '#FFFFFF';
+        $('btnOwnerDur').style.backgroundColor = 'transparent';
+        $('btnOwnerDur').style.color = 'var(--text-sub)';
+    } else {
+        $('btnOwnerDur').style.backgroundColor = 'var(--brand-main)';
+        $('btnOwnerDur').style.color = '#FFFFFF';
+        $('btnOwnerCount').style.backgroundColor = 'transparent';
+        $('btnOwnerCount').style.color = 'var(--text-sub)';
+    }
+    updateCharts();
+}
+
+function updateDashboard() {
+  updateKPIs();
+  updateTable();
+  setTimeout(updateCharts, 50); 
+}
+
+function updateKPIs() {
+  const total = filteredData.length;
+  const closed = filteredData.filter(d => d.status.toLowerCase() === 'closed').length;
+  const onTimeCount = filteredData.filter(d => d.isOnTime).length;
+  const rate = total ? Math.round((onTimeCount / total) * 100) : 0;
+
+  $('kTotal').textContent = total.toLocaleString();
+  $('kClosed').textContent = closed.toLocaleString();
+  $('kOnTime').textContent = `${rate}%`;
+  
+  const kOnTime = $('kOnTime');
+  if(rate >= 90) kOnTime.style.color = 'var(--brand-positive)';
+  else if(rate >= 75) kOnTime.style.color = 'var(--brand-accent)';
+  else kOnTime.style.color = 'var(--brand-negative)';
+}
+
+function updateTable() {
+  const tbody = $('tBody');
+  tbody.innerHTML = '';
+  
+  if (filteredData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4" style="color:var(--text-sub)">${currentLang === 'en' ? 'No data' : '無資料'}</td></tr>`;
+    return;
+  }
+
+  filteredData.slice(0, 500).forEach(d => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-gray-50 transition-colors";
+    
+    const s = d.status.toLowerCase();
+    // UPDATED: Use CSS Variables for table badges to respect custom colors
+    let badgeStyle = "background: var(--bg-color); color: var(--text-sub);";
+    if(s === 'closed') badgeStyle = `background: rgba(0,0,0,0.05); color: var(--brand-positive); border: 1px solid var(--brand-positive);`;
+    else if(s === 'pending') badgeStyle = `background: rgba(0,0,0,0.05); color: var(--brand-negative); border: 1px solid var(--brand-negative);`;
+    else if(s === 'processing') badgeStyle = `background: rgba(0,0,0,0.05); color: var(--text-blue); border: 1px solid var(--text-blue);`;
+
+    const onTimeIcon = d.isOnTime 
+      ? `<span style="color:var(--brand-positive); font-weight:bold;"><i class="fa-solid fa-check"></i></span>` 
+      : `<span style="color:var(--brand-negative); font-weight:bold;"><i class="fa-solid fa-clock"></i></span>`;
+
+    const devUnit = currentLang === 'en' ? 'days' : '天';
+    const devNum = parseFloat(d.deviation);
+    const devVal = (d.deviation === undefined || d.deviation === '') ? '-' : `${d.deviation} ${devUnit}`;
+    
+    let devStyle = 'color:var(--text-sub);';
+    if (!isNaN(devNum)) {
+        if (devNum < 0) devStyle = 'color:var(--brand-negative); font-weight:bold;'; 
+        else devStyle = 'color:var(--text-blue); font-weight:bold;'; 
+    }
+
+    tr.innerHTML = `
+      <td style="font-weight:500;">${d.owner}</td>
+      <td style="color:var(--text-sub); min-width: 450px; white-space: normal;">${d.desc}</td>
+      <td><span class="px-2 py-1 rounded text-[10px] font-bold" style="${badgeStyle}">${d.status}</span></td>
+      <td><div style="min-width:150px; color:var(--text-main); font-size:11px;">${formatBullets(d.progressDisplay)}</div></td>
+      <td>${d.category}</td>
+      <td>${d.cluster}</td>
+      <td style="font-family:monospace; color:var(--text-main); font-weight:bold;">${d.duration}</td>
+      <td style="font-family:monospace; ${devStyle}">${devVal}</td>
+      <td style="font-family:monospace; color:var(--brand-sub)">${formatDate(d.rev)}</td>
+      <td class="text-center">${onTimeIcon}</td>
+      <td style="min-width:250px;">${formatBullets(d.highlights)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateCharts() {
+  const commonOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: PALETTE.text, usePointStyle: true, boxWidth: 8 } },
+      tooltip: { mode: 'index', intersect: false },
+      datalabels: { // NEW: Data Labels Config
+          display: 'auto',
+          color: (ctx) => {
+              // Adjust text color based on bar color brightness or default to contrasting
+              return '#ffffff';
+          },
+          textStrokeColor: '#333',
+          textStrokeWidth: 2,
+          font: { weight: 'bold', size: 10 },
+          formatter: (value) => value
+      }
+    },
+    scales: {
+      x: { grid: { display:false }, ticks: { color: PALETTE.text } },
+      y: { grid: { color: PALETTE.grid }, ticks: { color: PALETTE.text } }
+    },
+    // NEW: Hover Config for all charts
+    hover: { mode: 'nearest', intersect: true },
+  };
+
+  // 1. Status Donut
+  const statusCount = {};
+  filteredData.forEach(d => statusCount[d.status] = (statusCount[d.status] || 0) + 1);
+  const statusLabels = Object.keys(statusCount);
+  
+  destroyChart('cStatus');
+  chartRefs.cStatus = new Chart($('cStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: Object.values(statusCount),
+        backgroundColor: statusLabels.map(s => getStatusColor(s)),
+        borderWidth: 2,
+        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg'),
+        hoverOffset: 15, // Enhanced Hover
+        hoverBorderWidth: 4,
+        hoverBorderColor: PALETTE.text
+      }]
+    },
+    options: { 
+        ...commonOpts, 
+        scales: {}, 
+        cutout: '70%',
+        plugins: {
+            ...commonOpts.plugins,
+            datalabels: {
+                color: PALETTE.text,
+                textStrokeColor: PALETTE.card,
+                textStrokeWidth: 3,
+                font: { size: 12, weight: 'bold' },
+                formatter: (value, ctx) => {
+                    const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    const percentage = Math.round((value / total) * 100) + '%';
+                    return `${value}\n(${percentage})`;
+                }
+            }
+        }
+    }
+  });
+
+  // 2. Category Bar (UPDATED: Stacked by OWNER)
+  const key = groupBy === 'Category' ? 'category' : 'cluster';
+  const labels = [...new Set(filteredData.map(d => d[key]))].sort();
+  const owners = [...new Set(filteredData.map(d => d.owner))].sort();
+  
+  // Dynamic color palette for owners
+  const dynamicPalette = getGenericPalette(owners.length);
+
+  const datasets = owners.map((owner, i) => ({
+    label: owner,
+    data: labels.map(label => filteredData.filter(d => d[key] === label && d.owner === owner).length),
+    backgroundColor: dynamicPalette[i % dynamicPalette.length],
+    borderRadius: 4,
+    hoverBorderWidth: 3,
+    hoverBorderColor: 'white'
+  }));
+
+  destroyChart('cCat');
+  chartRefs.cCat = new Chart($('cCat'), {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      ...commonOpts,
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: PALETTE.text } },
+        y: { stacked: true, grid: { color: PALETTE.grid }, ticks: { color: PALETTE.text } }
+      },
+      plugins: { 
+          ...commonOpts.plugins,
+          datalabels: {
+              color: '#ffffff',
+              formatter: (value) => value === 0 ? '' : value // Hide 0 labels
+          }
+      }
+    }
+  });
+
+  // 3. Owner Contribution (UPDATED with Metric Toggle)
+  // const owners = [...new Set(filteredData.map(d => d.owner))].sort(); // Already defined above
+  const cats = [...new Set(filteredData.map(d => d.category))];
+  const catPalette = getGenericPalette(cats.length);
+
+  const ownerDatasets = cats.map((c, i) => ({
+    label: c,
+    data: owners.map(o => {
+        const subset = filteredData.filter(d => d.owner === o && d.category === c);
+        if (ownerMetric === 'duration') {
+            return subset.reduce((acc, curr) => acc + (curr.duration || 0), 0);
+        }
+        return subset.length;
+    }),
+    backgroundColor: catPalette[i % catPalette.length],
+    hoverBorderWidth: 3,
+    hoverBorderColor: 'white'
+  }));
+
+  destroyChart('cOwner');
+  chartRefs.cOwner = new Chart($('cOwner'), {
+    type: 'bar',
+    data: { labels: owners, datasets: ownerDatasets },
+    options: {
+      ...commonOpts,
+      indexAxis: 'y',
+      scales: {
+        x: { stacked: true, grid: { color: PALETTE.grid }, ticks: { color: PALETTE.text } },
+        y: { stacked: true, grid: { display: false }, ticks: { color: PALETTE.text } }
+      },
+      plugins: {
+        ...commonOpts.plugins,
+        // SPECIFIC OVERRIDE FOR OWNER CHART LABELS
+        datalabels: {
+            color: '#ffffff',
+            formatter: (value, ctx) => {
+                if (value === 0) return '';
+                // If duration, add 'd', else just number
+                return ownerMetric === 'duration' ? value + 'd' : value;
+            }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+                const catName = context.dataset.label; 
+                const value = context.parsed.x; 
+                const ownerName = context.label;
+                const unit = ownerMetric === 'duration' ? 'days' : 'items';
+                return `${catName}: ${value} ${unit}`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // 4. Gantt Chart
+  updateGanttOnly();
+}
+
+function updateGanttOnly() {
+  const ganttCanvas = $('cGantt');
+  const anyFilterActive = (ganttFilters.owner !== 'All' || ganttFilters.status !== 'All' || ganttFilters.category !== 'All' || ganttFilters.cluster !== 'All' || ganttFilters.startMonth !== 'All' || ganttFilters.endMonth !== 'All');
+
+  if (!anyFilterActive) {
+    destroyChart('cGantt');
+    ganttCanvas.style.display = 'none';
+    $('ganttEmpty').style.display = 'block';
+  } else {
+    ganttCanvas.style.display = 'block';
+    $('ganttEmpty').style.display = 'none';
+    
+    const ganttDataRows = rawData.filter(d => {
+        // ... (Filter Logic same as before) ...
+        if(ganttFilters.owner !== 'All' && d.owner !== ganttFilters.owner) return false;
+        if(ganttFilters.status !== 'All' && d.status !== ganttFilters.status) return false;
+        if(ganttFilters.category !== 'All' && d.category !== ganttFilters.category) return false;
+        if(ganttFilters.cluster !== 'All' && d.cluster !== ganttFilters.cluster) return false;
+        if(ganttFilters.startMonth !== 'All' && d.month < ganttFilters.startMonth) return false;
+        if(ganttFilters.endMonth !== 'All' && d.month > ganttFilters.endMonth) return false;
+        return true;
+    });
+
+    const sortedGanttData = [...ganttDataRows].filter(d => d.due || d.rev).sort((a, b) => (a.rev || a.due) - (b.rev || b.due));
+    const ganttLabels = sortedGanttData.map(d => shortName(d.desc));
+    const ganttData = sortedGanttData.map(d => {
+      const end = d.rev || d.due;
+      const durDays = d.duration || 0;
+      const start = new Date(end);
+      start.setDate(start.getDate() - durDays);
+      return [start.getTime(), end.getTime()];
+    });
+    
+    // UPDATED: Dynamic status colors
+    const ganttColors = sortedGanttData.map(d => getStatusColor(d.status));
+
+    destroyChart('cGantt');
+    
+    chartRefs.cGantt = new Chart($('cGantt'), {
+      type: 'bar',
+      data: {
+        labels: ganttLabels,
+        datasets: [{
+          label: 'Timeline',
+          data: ganttData,
+          backgroundColor: ganttColors,
+          borderRadius: 4,
+          barPercentage: 0.6,
+          hoverBorderWidth: 3,
+          hoverBorderColor: 'white'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        scales: {
+          x: {
+            min: ganttData.length > 0 ? Math.min(...ganttData.map(d=>d[0])) : undefined,
+            grid: { color: PALETTE.grid },
+            ticks: { color: PALETTE.text, callback: (val) => new Date(val).toLocaleDateString(currentLang==='en'?'en-US':'zh-TW', {month:'short', day:'numeric'}) }
+          },
+          y: { grid: { display: false }, ticks: { color: PALETTE.text } }
+        },
+        plugins: {
+            legend: { position: 'bottom', labels: { color: PALETTE.text } },
+            tooltip: { callbacks: { label: (ctx) => {
+                 const item = sortedGanttData[ctx.dataIndex];
+                 const start = new Date(ctx.raw[0]).toLocaleDateString();
+                 const end = new Date(ctx.raw[1]).toLocaleDateString();
+                 return [`${item.desc}`, `Duration: ${item.duration} days`, `${start} - ${end}`];
+            }}},
+            datalabels: {
+                anchor: 'end',
+                align: 'end',
+                color: PALETTE.text,
+                formatter: (value, ctx) => {
+                    const item = sortedGanttData[ctx.dataIndex];
+                    return `${item.duration}d`;
+                }
+            }
+        }
+      }
+    });
+  }
+}
+
+// --- WIZ & OTHER LOGIC SAME AS V8.9 ---
+function generateWizSummary() {
+    const wizBlock = $('wizBlock');
+    const wizContent = $('wizContent');
+    const t = TEXT[currentLang];
+
+    // Filter Logic Same as Gantt
+    const wizData = rawData.filter(d => {
+        if(ganttFilters.owner !== 'All' && d.owner !== ganttFilters.owner) return false;
+        if(ganttFilters.status !== 'All' && d.status !== ganttFilters.status) return false;
+        if(ganttFilters.category !== 'All' && d.category !== ganttFilters.category) return false;
+        if(ganttFilters.cluster !== 'All' && d.cluster !== ganttFilters.cluster) return false;
+        if(ganttFilters.startMonth !== 'All' && d.month < ganttFilters.startMonth) return false;
+        if(ganttFilters.endMonth !== 'All' && d.month > ganttFilters.endMonth) return false;
+        return true;
+    });
+
+    if (wizData.length === 0) { alert("No data"); return; }
+
+    const uniqueOwners = [...new Set(wizData.map(d => d.owner))];
+    const totalDuration = wizData.reduce((sum, d) => sum + (d.duration || 0), 0);
+    const closedCount = wizData.filter(d => d.status.toLowerCase() === 'closed').length;
+    const processingCount = wizData.filter(d => d.status.toLowerCase() === 'processing').length;
+    
+    let periodText = "";
+    if (ganttFilters.startMonth !== 'All' && ganttFilters.endMonth !== 'All') periodText = `${ganttFilters.startMonth} ~ ${ganttFilters.endMonth}`;
+    else {
+        const dates = wizData.map(d => d.month).filter(m => m && m !== 'Unknown').sort();
+        periodText = dates.length > 0 ? `${dates[0]} ~ ${dates[dates.length-1]}` : (currentLang === 'en' ? "All Periods" : "所有期間");
+    }
+
+    let projectListHTML = '<div class="overflow-y-auto pr-2 custom-scrollbar" style="max-height: 300px;">';
+    wizData.forEach((d, index) => {
+        const pDesc = shortName(d.desc, 60);
+        const pDur = d.duration || 0; 
+        const cleanHighlight = d.highlights ? d.highlights.replace(/[•*-]/g, '').trim() : '';
+        const pDeliv = shortName(cleanHighlight, 80) || (currentLang === 'en' ? 'No specific deliverables' : '無具體交付物');
+        
+        projectListHTML += `
+            <div class="mb-3 pb-2 border-b border-dashed" style="border-color:rgba(0,0,0,0.1);">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-bold text-xs" style="color:var(--brand-main); line-height: 1.4;">${index + 1}. ${pDesc}</span>
+                    <span class="text-[10px] font-bold whitespace-nowrap ml-2 px-1.5 py-0.5 rounded" 
+                          style="background-color:rgba(0,0,0,0.05); color:var(--brand-accent);">
+                        ${pDur} days
+                    </span>
+                </div>
+                <div class="text-[11px] leading-relaxed pl-3 border-l-2" style="border-color:var(--brand-sub); color:var(--text-sub);">
+                    ${pDeliv}
+                </div>
+            </div>
+        `;
+    });
+    projectListHTML += '</div>';
+
+    const leftCol = `
+        <div>
+            <h4 class="font-bold mb-1 uppercase text-xs flex items-center gap-2" style="color:var(--brand-main);">
+                ${t.wizProjects} 
+                <span class="text-[10px] px-2 py-0.5 rounded border border-gray-300 bg-opacity-50" style="color:var(--text-main); background-color:var(--bg-color);">
+                   <i class="fa-regular fa-calendar mr-1"></i> ${periodText}
+                </span>
+            </h4>
+            <p class="text-3xl font-bold mb-1" style="color:var(--text-main);">${wizData.length}</p>
+            <div class="text-xs" style="color:var(--text-sub);">
+                <span style="color:var(--brand-positive); font-weight:bold;">${closedCount}</span> Completed, 
+                <span style="color:var(--brand-sub); font-weight:bold;">${processingCount}</span> In Progress
+            </div>
+            <div class="mt-4">
+                <h4 class="font-bold mb-2 uppercase text-xs" style="color:var(--brand-main);">${t.wizTotalTime}</h4>
+                <p class="text-3xl font-bold" style="color:var(--brand-accent);">${totalDuration.toFixed(1)} <span class="text-sm font-normal text-gray-500">Days</span></p>
+            </div>
+            <div class="mt-4">
+                <h4 class="font-bold mb-2 uppercase text-xs" style="color:var(--brand-main);">${t.wizOwners}</h4>
+                <div class="flex flex-wrap gap-1">
+                    ${uniqueOwners.map(o => `<span class="px-2 py-0.5 rounded text-[10px] border" style="border-color:var(--border-color); color:var(--text-sub);">${o}</span>`).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    wizContent.innerHTML = leftCol + `<div><h4 class="font-bold mb-2 uppercase text-xs" style="color:var(--brand-main);">${t.wizDeliv}</h4>${projectListHTML}</div>`;
+    wizBlock.classList.remove('hidden');
+    gsap.from(wizBlock, { height: 0, opacity: 0, duration: 0.5 });
+    setTimeout(() => { wizBlock.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+}
+
+// --- EVENT LISTENERS ---
+$('fileInput').onchange = (e) => { const file = e.target.files[0]; if(file) processFile(file); };
+$('btnCat').onclick = () => { groupBy = 'Category'; $('btnCat').style.backgroundColor = 'var(--brand-main)'; $('btnCat').style.color='#fff'; $('btnClust').style.backgroundColor='transparent'; $('btnClust').style.color='var(--text-sub)'; updateCharts(); };
+$('btnClust').onclick = () => { groupBy = 'Cluster'; $('btnClust').style.backgroundColor = 'var(--brand-main)'; $('btnClust').style.color='#fff'; $('btnCat').style.backgroundColor='transparent'; $('btnCat').style.color='var(--text-sub)'; updateCharts(); };
+$('btnExport').onclick = () => {
+  if(!filteredData.length) return;
+  const header = "Owner,Description,Status,Category,Cluster,Duration,Deviation,Revision 1,IsOnTime,Highlights";
+  const rows = filteredData.map(d => `"${d.owner}","${d.desc.replace(/"/g, '""')}","${d.status}","${d.category}","${d.cluster}","${d.duration}","${d.deviation}","${formatDate(d.rev)}","${d.isOnTime}","${d.highlights.replace(/"/g, '""')}"`).join('\n');
+  const blob = new Blob([header + '\n' + rows], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
+};
+const stars = $('stars');
+let starRating = 0; 
+for(let i=1; i<=5; i++){
+  const s = document.createElement('i'); s.className = "fa-solid fa-star hover:opacity-80";
+  s.onclick = () => { starRating = i; Array.from(stars.children).forEach((el, idx) => el.style.color = idx < starRating ? 'var(--brand-accent)' : 'var(--border-color)'); };
+  stars.appendChild(s);
+}
+$('fbSave').onclick = () => { localStorage.setItem('dash_fb_v4', JSON.stringify({ rating: starRating, note: $('fbComment').value })); $('fbMsg').textContent = "Feedback saved!"; setTimeout(() => $('fbMsg').textContent = "", 2000); }
+function openModal(id) { $(id).style.display = 'flex'; }
+function closeModal(id) { $(id).style.display = 'none'; }
+
+// --- INIT ---
+applyTheme('slightGray');
+applyLanguage();
+if($('gSheetUrl').value) loadGoogleSheet();
+
+</script>
+</body>
+</html>
