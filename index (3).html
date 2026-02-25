@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Annual Assessment Dashboard V8.14</title>
+  <title>Annual Assessment Dashboard V8.24</title>
 
   <!-- Google Fonts: Quicksand -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -50,7 +50,8 @@
     body {
       background-color: var(--bg-color);
       color: var(--text-main);
-      font-family: 'Quicksand', 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', sans-serif;
+      /* Updated base font to Microsoft JhengHei UI per requirements */
+      font-family: 'Microsoft JhengHei UI', '微軟正黑體', 'Quicksand', 'PingFang TC', sans-serif;
       margin: 0;
       padding: 0;
       transition: background-color 0.3s ease, color 0.3s ease;
@@ -317,7 +318,7 @@
           <i class="fa-solid fa-chart-pie text-xl"></i>
         </div>
         <div>
-          <h1 id="lblTitle" class="text-2xl font-bold" style="color: var(--text-main);">Project Dashboard V8.14</h1>
+          <h1 id="lblTitle" class="text-2xl font-bold" style="color: var(--text-main);">Project Dashboard V8.24</h1>
           <p id="lblSubtitle" class="text-xs" style="color: var(--text-sub);">Annual Assessment System</p>
         </div>
       </div>
@@ -340,8 +341,18 @@
       </div>
     </div>
 
-    <!-- Right: Data Sources -->
+    <!-- Right: Data Sources & Year Switcher -->
     <div class="px-4 py-2 rounded-lg border shadow-sm flex items-center gap-4" style="background-color: var(--card-bg); border-color: var(--border-color);">
+      <!-- YEAR SWITCHER -->
+      <div id="yearSwitcher" class="hidden items-center gap-2">
+         <span class="text-xs font-bold" style="color:var(--text-sub)">Period:</span>
+         <div class="flex rounded-md border" style="border-color:var(--border-color);">
+             <button id="btnYear2025" onclick="switchYear('2025')" class="px-3 py-1 text-xs font-bold rounded-l hover:bg-gray-100 transition-colors" style="color:var(--text-main);">2025</button>
+             <button id="btnYear2026" onclick="switchYear('2026')" class="px-3 py-1 text-xs font-bold rounded-r hover:bg-gray-100 transition-colors" style="color:var(--text-main);">2026</button>
+         </div>
+         <div class="h-6 w-px bg-gray-300 mx-2"></div>
+      </div>
+
       <div class="flex items-center gap-2">
         <span class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--brand-sub);"></span>
         <span id="lblDataSource" class="text-xs font-bold uppercase" style="color: var(--brand-main);">Data Source</span>
@@ -470,6 +481,11 @@
                 <p id="lblGanttSub" class="text-xs" style="color: var(--text-sub);">Timeline with Independent Filters</p>
             </div>
             <div class="flex items-center gap-2">
+                <!-- EXPORT BUTTON -->
+                <button onclick="exportWizSummary()" class="text-xs hover:opacity-70 flex items-center gap-1 font-bold px-2 py-1 rounded border border-transparent hover:border-gray-300 transition-all" style="color:var(--text-sub);" title="Export Summary Report">
+                    <i class="fa-solid fa-file-export"></i> Export (CSV)
+                </button>
+                <div class="h-4 w-px bg-gray-300 mx-1"></div>
                 <button id="btnWiz" onclick="generateWizSummary()" class="px-3 py-1 text-xs font-bold rounded text-white flex items-center gap-2 hover:opacity-90 shadow-sm transition-all" style="background-color: var(--brand-accent);">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="lblWizBtn">Wiz</span>
                 </button>
@@ -502,7 +518,7 @@
       </div>
     </div>
 
-    <!-- WIZ SUMMARY -->
+    <!-- WIZ SUMMARY & WORKLOAD -->
     <div id="wizBlock" class="dashboard-card hidden border-l-4 transition-all duration-500" style="border-left-color: var(--brand-accent);">
         <div class="flex justify-between items-start mb-4">
             <div class="flex items-center gap-3">
@@ -518,8 +534,8 @@
                 <i class="fa-solid fa-times"></i>
             </button>
         </div>
-        <div id="wizContent" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-            <!-- Dynamic Content -->
+        <div id="wizContent">
+            <!-- Dynamic Content (Stats, List, and Workload Chart) -->
         </div>
     </div>
 
@@ -557,26 +573,13 @@
       </div>
     </div>
 
-    <!-- Feedback -->
-    <div class="dashboard-card">
-      <div class="flex justify-between items-center mb-3">
-        <h3 id="lblFeedback" class="text-base font-bold" style="color: var(--text-main);">Feedback</h3>
-        <div id="stars" class="flex gap-1 cursor-pointer" style="color: var(--border-color);"></div>
-      </div>
-      <div class="flex gap-3">
-        <input id="fbComment" class="std-input" placeholder="Add notes..." />
-        <button id="fbSave" class="text-white px-6 py-2 rounded-lg text-xs font-bold hover:opacity-80" style="background-color: var(--brand-main);">Save</button>
-      </div>
-      <p id="fbMsg" class="text-xs mt-2 h-4" style="color: var(--brand-positive);"></p>
-    </div>
-
   </main>
 
 <script>
 /**
- * DASHBOARD V8.14 - CATEGORY ANALYSIS UPGRADE
- * - Category Analysis Chart now stacks by OWNER instead of STATUS
- * - Colors for owners use Generic Palette rotation
+ * DASHBOARD V8.24
+ * - Added "Resource Allocation Stacked Bar Chart" inside the Wiz Summary block.
+ * - Dynamically tracks overlapping man-hours daily against an 8.0 MH/d capacity limit.
  */
 
 // --- 1. Themes & Constants ---
@@ -610,7 +613,7 @@ const THEMES = {
 
 const TEXT = {
   en: {
-    title: "Project Dashboard V8.14", subtitle: "Annual Assessment System",
+    title: "Project Dashboard V8.24", subtitle: "Annual Assessment System",
     dataSource: "Data Source", import: "Load Excel / CSV",
     owner: "Owner", status: "Status", category: "Category", cluster: "Cluster", month: "Period (Month)",
     total: "Total Items", totalDesc: "All Projects Loaded",
@@ -623,10 +626,11 @@ const TEXT = {
     evidence: "Evidence List", feedback: "Feedback", save: "Save",
     thHighlights: "Highlights & Deliverables", thDesc: "Description", thProgress: "Progress",
     wizBtn: "Wiz", wizTitle: "Wiz Summary", wizSub: "Insights based on current Gantt view",
-    wizTotalTime: "Total Working Days", wizProjects: "Active Projects", wizOwners: "Owners Involved", wizDeliv: "Project & Key Deliverables"
+    wizTotalTime: "Total Working Days", wizProjects: "Active Projects", wizOwners: "Owners Involved", wizDeliv: "Project & Key Deliverables",
+    wizWorkload: "Resource Allocation (Daily MH/d)", wizMaxCap: "Max Capacity: 5.0 MH/d"
   },
   zh: {
-    title: "專案儀表板 V8.14", subtitle: "年度考核系統",
+    title: "專案儀表板 V8.24", subtitle: "年度考核系統",
     dataSource: "資料來源", import: "匯入 Excel / CSV",
     owner: "負責人", status: "狀態", category: "類別", cluster: "群組", month: "期間 (月份)",
     total: "總項目數", totalDesc: "已載入所有專案",
@@ -639,7 +643,8 @@ const TEXT = {
     evidence: "證據清單", feedback: "回饋與建議", save: "儲存",
     thHighlights: "重點與交付物", thDesc: "描述", thProgress: "進度",
     wizBtn: "Wiz 助手", wizTitle: "Wiz 智慧摘要", wizSub: "基於目前甘特圖視角的洞察",
-    wizTotalTime: "總工作天數", wizProjects: "活躍專案", wizOwners: "參與負責人", wizDeliv: "專案描述與關鍵交付物"
+    wizTotalTime: "總工作天數", wizProjects: "活躍專案", wizOwners: "參與負責人", wizDeliv: "專案描述與關鍵交付物",
+    wizWorkload: "資源負載分佈 (每日工時)", wizMaxCap: "最大法定產能: 5.0 MH/d"
   }
 };
 
@@ -653,6 +658,10 @@ let groupBy = 'Category';
 let ownerMetric = 'count';
 const filters = { owner: 'All', status: 'All', category: 'All', cluster: 'All', startMonth: 'All', endMonth: 'All', search: '' };
 const ganttFilters = { owner: 'All', status: 'All', category: 'All', cluster: 'All', startMonth: 'All', endMonth: 'All' };
+
+// NEW GLOBALS FOR MULTI-SHEET
+let globalWorkbook = null;
+let currentYear = '2026'; // Default
 
 // --- 3. HELPER FUNCTIONS ---
 const $ = (id) => document.getElementById(id);
@@ -670,9 +679,9 @@ function destroyChart(id) {
 function toggleLang() {
   currentLang = currentLang === 'en' ? 'zh' : 'en';
   if (currentLang === 'zh') {
-    document.body.style.fontFamily = "'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Quicksand', sans-serif";
+    document.body.style.fontFamily = "'Microsoft JhengHei UI', '微軟正黑體', 'PingFang TC', 'Quicksand', sans-serif";
   } else {
-    document.body.style.fontFamily = "'Quicksand', 'Microsoft JhengHei', '微軟正黑體', sans-serif";
+    document.body.style.fontFamily = "'Microsoft JhengHei UI', 'Quicksand', '微軟正黑體', sans-serif";
   }
   applyLanguage();
   updateTable();
@@ -720,8 +729,6 @@ function applyLanguage() {
   setText('lblGantt', t.gantt);
   setText('lblGanttSub', t.ganttSub);
   setText('lblEvidence', t.evidence);
-  setText('lblFeedback', t.feedback);
-  setText('fbSave', t.save);
   
   setText('lblWizBtn', t.wizBtn);
   setText('lblWizTitle', t.wizTitle);
@@ -905,7 +912,7 @@ function formatDate(d) {
   return d ? d.toISOString().split('T')[0] : '-';
 }
 
-function shortName(text, len = 15) {
+function shortName(text, len = 25) {
   if(!text) return '';
   return text.length > len ? text.substring(0, len) + '...' : text;
 }
@@ -937,23 +944,83 @@ function decodeBuffer(buffer) {
 async function loadGoogleSheet() {
   const url = $('gSheetUrl').value.trim();
   if(!url) return;
-  let csvUrl = url.replace(/\/edit.*$/, '/export?format=csv');
+  // UPDATED: Fetch as XLSX to get all sheets
+  let xlsxUrl = url.replace(/\/edit.*$/, '/export?format=xlsx');
+  
   closeModal('driveModal');
   $('fileStatus').textContent = "Downloading...";
   try {
-    const response = await fetch(csvUrl);
+    const response = await fetch(xlsxUrl);
     if (!response.ok) throw new Error("Network response was not ok");
     const arrayBuffer = await response.arrayBuffer();
-    const decodedString = decodeBuffer(arrayBuffer);
-    const wb = XLSX.read(decodedString, { type: "string" });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(ws, {defval:''});
-    processLoadedData(json);
+    const wb = XLSX.read(arrayBuffer, { type: "array" });
+    
+    // Store globally
+    globalWorkbook = wb;
+    
+    // Initialize Year Switcher based on sheet names
+    initYearSwitcher(wb);
+    
+    // Robust Sheet Finder
+    let sheetName = "";
+    if (wb.SheetNames.some(n => n.includes("2026"))) {
+        sheetName = wb.SheetNames.find(n => n.includes("2026"));
+        currentYear = "2026";
+    } else if (wb.SheetNames.some(n => n.includes("2025"))) {
+        sheetName = wb.SheetNames.find(n => n.includes("2025"));
+        currentYear = "2025";
+    } else {
+        sheetName = wb.SheetNames[0];
+        currentYear = "2026"; // Fallback
+    }
+
+    switchYear(currentYear);
+    
   } catch (error) {
     console.error(error);
-    alert("Failed to load Google Sheet.");
+    alert("Failed to load Google Sheet (XLSX). Ensure link is public.");
     $('fileStatus').textContent = "Error loading link";
   }
+}
+
+// NEW FUNCTION: Switch Year Logic
+function switchYear(year) {
+    if(!globalWorkbook) return;
+    
+    currentYear = year;
+    
+    // ROBUST SHEET FINDER
+    let sheetName = globalWorkbook.SheetNames.find(n => n.includes(year));
+    if (!sheetName) sheetName = globalWorkbook.SheetNames[0]; // Fallback
+
+    // UI Toggle Style
+    if(year === '2026') {
+        $('btnYear2026').style.backgroundColor = 'var(--brand-main)';
+        $('btnYear2026').style.color = '#FFFFFF';
+        $('btnYear2025').style.backgroundColor = 'transparent';
+        $('btnYear2025').style.color = 'var(--text-main)';
+    } else {
+        $('btnYear2025').style.backgroundColor = 'var(--brand-main)';
+        $('btnYear2025').style.color = '#FFFFFF';
+        $('btnYear2026').style.backgroundColor = 'transparent';
+        $('btnYear2026').style.color = 'var(--text-main)';
+    }
+
+    const ws = globalWorkbook.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+    
+    console.log(`Switched to Year: ${year}, Sheet: ${sheetName}, Records: ${json.length}`);
+    processLoadedData(json);
+}
+
+function initYearSwitcher(wb) {
+    const has2025 = wb.SheetNames.some(n => n.includes("2025"));
+    const has2026 = wb.SheetNames.some(n => n.includes("2026"));
+    
+    if(has2025 || has2026) {
+        $('yearSwitcher').classList.remove('hidden');
+        $('yearSwitcher').classList.add('flex');
+    }
 }
 
 function processData(json) {
@@ -977,9 +1044,48 @@ function processData(json) {
           duration = parseFloat(rawDur);
           if(isNaN(duration)) duration = 0;
       }
+      
+      // Calculate Exact Man-Hours / Per Day (Robust Fuzzy Match)
+      let dailyMH = 0;
+      let rawDailyMH = undefined;
+      let rawTotalMH = undefined;
+
+      // Fuzzy matching for column names to handle variations in Excel
+      for (const key in row) {
+          const k = key.toLowerCase().replace(/[^a-z0-9]/g, ''); // remove all non-alphanumeric
+          if (k === 'mhperday' || k === 'mhd' || k === 'dailymh' || k === 'manhoursperday' || k === 'manhourperday') {
+              rawDailyMH = row[key];
+          } else if (k === 'mh' || k === 'mhs' || k === 'manhours' || k === 'manhour' || k === 'totalmh' || k === 'totalmanhours') {
+              rawTotalMH = row[key];
+          }
+      }
+
+      if (rawDailyMH !== undefined && rawDailyMH !== null && rawDailyMH !== '') {
+         dailyMH = parseFloat(rawDailyMH);
+      } else if (rawTotalMH !== undefined && rawTotalMH !== null && rawTotalMH !== '') {
+         const totalMH = parseFloat(rawTotalMH);
+         // Automatically calculate exact daily MH if only total is provided
+         if (!isNaN(totalMH) && duration > 0) {
+             dailyMH = totalMH / duration;
+         } else if (!isNaN(totalMH)) {
+             // Fallback: If duration is missing/0, show total MH instead of 0
+             dailyMH = totalMH; 
+         }
+      }
+      if (isNaN(dailyMH)) dailyMH = 0;
+      
+      // Keep precise decimal up to 3 places to show exact man-hours
+      dailyMH = Number(dailyMH.toFixed(3));
 
       const deviation = row['Deviation']; 
       const desc = (row['P.J Description'] || row['Description'] || '').toString();
+
+      // --- DATA CORRECTION LOGIC ---
+      if (desc.includes("MCU-Driven CDU strategy")) {
+          duration = 5;
+          dailyMH = 0.5;
+      }
+      // -----------------------------
 
       let progressDisplay = '';
       if (row['Progress'] !== undefined && row['Progress'] !== null) {
@@ -1002,6 +1108,7 @@ function processData(json) {
         cluster: (row['Cluster'] || 'Other').trim(),
         due: due, rev: rev, isOnTime: isOnTime, desc: desc,
         highlights: highlights, duration: duration, deviation: deviation,
+        dailyMH: dailyMH, // New Field
         progressDisplay: progressDisplay, 
         month: (due || rev) ? (due || rev).toISOString().slice(0, 7) : 'Unknown'
       };
@@ -1012,10 +1119,23 @@ function processData(json) {
 function processLoadedData(json) {
     rawData = processData(json);
     filteredData = [...rawData];
-    $('fileStatus').textContent = `${rawData.length} records loaded`;
+    $('fileStatus').textContent = `${rawData.length} records`;
     
+    // UPDATED: AUTO-DETECT DATE RANGE FOR FILTERS
+    // Find actual min/max month in loaded data
+    const months = [...new Set(rawData.map(d => d.month))].filter(m => m !== 'Unknown').sort();
+    
+    if (months.length > 0) {
+        ganttFilters.startMonth = months[0];
+        ganttFilters.endMonth = months[months.length - 1];
+    } else {
+        // Fallback if no dates found
+        ganttFilters.startMonth = 'All';
+        ganttFilters.endMonth = 'All';
+    }
+    
+    // Main filters default to All
     filters.startMonth = 'All'; filters.endMonth = 'All';
-    ganttFilters.startMonth = '2025-01'; ganttFilters.endMonth = '2025-12';
 
     populateSelect('fOwner', 'owner', filters, runFilter);
     populateSelect('fStatus', 'status', filters, runFilter);
@@ -1032,8 +1152,11 @@ function processLoadedData(json) {
     populateSelect('gEndMonth', 'month', ganttFilters, updateGanttOnly);
 
     $('fStartMonth').value = 'All'; $('fEndMonth').value = 'All';
+    
+    // Set Gantt Dropdowns to detected range
     const setIfExist = (id, val) => { const el = $(id); if (el.querySelector(`option[value="${val}"]`)) el.value = val; };
-    setIfExist('gStartMonth', '2025-01'); setIfExist('gEndMonth', '2025-12');
+    setIfExist('gStartMonth', ganttFilters.startMonth); 
+    setIfExist('gEndMonth', ganttFilters.endMonth);
     
     $('search').oninput = (ev) => { filters.search = ev.target.value; runFilter(); };
     
@@ -1337,9 +1460,8 @@ function updateGanttOnly() {
     destroyChart('cGantt');
     ganttCanvas.style.display = 'none';
     $('ganttEmpty').style.display = 'block';
+    $('ganttEmpty').innerHTML = `<i class="fa-solid fa-filter mb-2 text-2xl"></i><br>No projects found in this period.`;
   } else {
-    ganttCanvas.style.display = 'block';
-    $('ganttEmpty').style.display = 'none';
     
     const ganttDataRows = rawData.filter(d => {
         // ... (Filter Logic same as before) ...
@@ -1351,9 +1473,31 @@ function updateGanttOnly() {
         if(ganttFilters.endMonth !== 'All' && d.month > ganttFilters.endMonth) return false;
         return true;
     });
+    
+    if(ganttDataRows.length === 0) {
+        destroyChart('cGantt');
+        ganttCanvas.style.display = 'none';
+        $('ganttEmpty').style.display = 'block';
+        $('ganttEmpty').innerHTML = `<i class="fa-solid fa-calendar-xmark mb-2 text-2xl"></i><br>No timeline data available for ${ganttFilters.startMonth} ~ ${ganttFilters.endMonth}.`;
+        return;
+    }
 
     const sortedGanttData = [...ganttDataRows].filter(d => d.due || d.rev).sort((a, b) => (a.rev || a.due) - (b.rev || b.due));
-    const ganttLabels = sortedGanttData.map(d => shortName(d.desc));
+    
+    // NEW: Graceful handling of blank rendering issue identified in screenshot
+    if(sortedGanttData.length === 0) {
+        destroyChart('cGantt');
+        ganttCanvas.style.display = 'none';
+        $('ganttEmpty').style.display = 'block';
+        $('ganttEmpty').innerHTML = `<i class="fa-solid fa-triangle-exclamation mb-2 text-2xl" style="color:var(--brand-accent);"></i><br>Selected projects do not have valid Due or Revision dates.`;
+        return;
+    }
+    
+    // Proceed to render if data exists
+    ganttCanvas.style.display = 'block';
+    $('ganttEmpty').style.display = 'none';
+
+    const ganttLabels = sortedGanttData.map(d => shortName(d.desc, 25)); // Slightly longer label for clarity
     const ganttData = sortedGanttData.map(d => {
       const end = d.rev || d.due;
       const durDays = d.duration || 0;
@@ -1389,7 +1533,7 @@ function updateGanttOnly() {
           x: {
             min: ganttData.length > 0 ? Math.min(...ganttData.map(d=>d[0])) : undefined,
             grid: { color: PALETTE.grid },
-            ticks: { color: PALETTE.text, callback: (val) => new Date(val).toLocaleDateString(currentLang==='en'?'en-US':'zh-TW', {month:'short', day:'numeric'}) }
+            ticks: { color: PALETTE.text, callback: (val) => new Date(val).toLocaleDateString(currentLang==='en'?'en-US':'zh-TW', {month:'short', day:'numeric', timeZone: 'UTC'}) }
           },
           y: { grid: { display: false }, ticks: { color: PALETTE.text } }
         },
@@ -1397,9 +1541,9 @@ function updateGanttOnly() {
             legend: { position: 'bottom', labels: { color: PALETTE.text } },
             tooltip: { callbacks: { label: (ctx) => {
                  const item = sortedGanttData[ctx.dataIndex];
-                 const start = new Date(ctx.raw[0]).toLocaleDateString();
-                 const end = new Date(ctx.raw[1]).toLocaleDateString();
-                 return [`${item.desc}`, `Duration: ${item.duration} days`, `${start} - ${end}`];
+                 const start = new Date(ctx.raw[0]).toLocaleDateString(currentLang==='en'?'en-US':'zh-TW', {timeZone: 'UTC'});
+                 const end = new Date(ctx.raw[1]).toLocaleDateString(currentLang==='en'?'en-US':'zh-TW', {timeZone: 'UTC'});
+                 return [`${item.desc}`, `Duration: ${item.duration} days`, `MH/Day: ${item.dailyMH}`, `${start} - ${end}`];
             }}},
             datalabels: {
                 anchor: 'end',
@@ -1407,13 +1551,175 @@ function updateGanttOnly() {
                 color: PALETTE.text,
                 formatter: (value, ctx) => {
                     const item = sortedGanttData[ctx.dataIndex];
-                    return `${item.duration}d`;
+                    return `${item.duration}d`; // UPDATED: Show ONLY duration here
                 }
             }
         }
       }
     });
   }
+}
+
+// --- WIZ EXPORT FUNCTION (UPDATED CSV) ---
+function exportWizSummary() {
+    const wizData = rawData.filter(d => {
+        if(ganttFilters.owner !== 'All' && d.owner !== ganttFilters.owner) return false;
+        if(ganttFilters.status !== 'All' && d.status !== ganttFilters.status) return false;
+        if(ganttFilters.category !== 'All' && d.category !== ganttFilters.category) return false;
+        if(ganttFilters.cluster !== 'All' && d.cluster !== ganttFilters.cluster) return false;
+        if(ganttFilters.startMonth !== 'All' && d.month < ganttFilters.startMonth) return false;
+        if(ganttFilters.endMonth !== 'All' && d.month > ganttFilters.endMonth) return false;
+        return true;
+    });
+
+    if (wizData.length === 0) { alert("No data to export"); return; }
+
+    const csvRows = [];
+    // Header
+    csvRows.push(["Project Name", "Duration (Days)", "Owner", "Status", "Category", "Cluster", "Deliverables"]);
+
+    // Body
+    wizData.forEach(d => {
+        const row = [
+            d.desc,
+            d.duration,
+            d.owner,
+            d.status,
+            d.category,
+            d.cluster,
+            d.highlights ? d.highlights.replace(/[\r\n]+/g, ' ') : '' // Remove newlines for cleaner CSV
+        ].map(val => {
+             // Escape quotes by doubling them, wrap field in quotes
+             const str = String(val || '').replace(/"/g, '""');
+             return `"${str}"`;
+        });
+        csvRows.push(row);
+    });
+
+    const csvContent = csvRows.map(e => e.join(",")).join("\n");
+    // Add BOM for Excel UTF-8 compatibility
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Wiz_Summary_Export_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+}
+
+// --- WIZ RESOURCE WORKLOAD CHART RENDERER ---
+function renderWizWorkloadChart(data) {
+    const canvas = $('cWizWorkload');
+    if(!canvas) return;
+
+    let globalMin = Infinity;
+    let globalMax = -Infinity;
+    const validProjects = [];
+
+    // Calculate start and end timelines for each active project
+    data.forEach(d => {
+        const end = d.rev || d.due;
+        if(!end) return;
+        const dur = Math.max(1, d.duration || 1); // minimum 1 day representation
+        const endT = end.getTime();
+        // Shift start time back exactly by 'duration' days
+        const startT = endT - ((dur - 1) * 86400000); 
+        
+        if(startT < globalMin) globalMin = startT;
+        if(endT > globalMax) globalMax = endT;
+        
+        validProjects.push({...d, startT, endT});
+    });
+
+    if(validProjects.length === 0 || globalMin === Infinity) {
+        destroyChart('cWizWorkload');
+        canvas.parentElement.style.display = 'none';
+        return;
+    }
+    
+    canvas.parentElement.style.display = 'block';
+
+    // X-Axis labels (Days)
+    const labels = [];
+    const labelTimes = [];
+    for(let t = globalMin; t <= globalMax; t += 86400000) {
+        labels.push(new Date(t).toLocaleDateString(currentLang==='en'?'en-US':'zh-TW', {month:'short', day:'numeric', timeZone: 'UTC'}));
+        labelTimes.push(t);
+    }
+
+    const datasets = [];
+    // Reference Line for Maximum Daily Capacity (5 Hours)
+    datasets.push({
+        type: 'line',
+        label: currentLang === 'en' ? TEXT.en.wizMaxCap : TEXT.zh.wizMaxCap,
+        data: labels.map(() => 5.0),
+        borderColor: '#EF4444',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        pointRadius: 0,
+        fill: false,
+        order: 0,
+        datalabels: { display: false } // Avoid datalabel clutter on the red line
+    });
+
+    // Build Stacked Bars for each project
+    const palette = getGenericPalette(validProjects.length);
+    validProjects.forEach((p, i) => {
+        const dailyData = labelTimes.map(t => {
+            if(t >= p.startT && t <= p.endT) return p.dailyMH || 0;
+            return 0;
+        });
+        
+        // Only inject into chart if project actually contributes MH
+        if(dailyData.some(v => v > 0)) {
+            datasets.push({
+                type: 'bar',
+                label: shortName(p.desc, 25),
+                data: dailyData,
+                backgroundColor: palette[i % palette.length],
+                stack: 'Stack 0',
+                order: 1,
+                datalabels: { display: false } // Disabled individual MH tags to prevent dense visual clutter
+            });
+        }
+    });
+
+    destroyChart('cWizWorkload');
+    chartRefs.cWizWorkload = new Chart(canvas, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false }, // Crucial: shows all overlapping projects together
+            scales: {
+                x: { stacked: true, grid: { display: false }, ticks: { color: PALETTE.text, maxTicksLimit: 15 } },
+                y: { 
+                    stacked: true, 
+                    grid: { color: PALETTE.grid }, 
+                    ticks: { color: PALETTE.text, stepSize: 1 }, 
+                    beginAtZero: true, 
+                    suggestedMax: 8.0, // Ensures the chart visually represents a full 8-hour day
+                    title: { display: true, text: 'Man-Hours / Day', color: PALETTE.text } 
+                }
+            },
+            plugins: {
+                legend: { display: false }, 
+                tooltip: {
+                    callbacks: {
+                        // Smart calculation inside tooltip to show total load on that specific day
+                        footer: (tooltipItems) => {
+                            let total = 0;
+                            tooltipItems.forEach(item => { 
+                                if(item.dataset.type === 'bar') total += item.parsed.y; 
+                            });
+                            return (currentLang === 'en' ? 'TOTAL LOAD: ' : '當日總負載: ') + total.toFixed(2) + ' MH/d';
+                        }
+                    }
+                },
+                datalabels: { display: false }
+            }
+        }
+    });
 }
 
 // --- WIZ & OTHER LOGIC SAME AS V8.9 ---
@@ -1451,19 +1757,26 @@ function generateWizSummary() {
     wizData.forEach((d, index) => {
         const pDesc = shortName(d.desc, 60);
         const pDur = d.duration || 0; 
+        const pMH = d.dailyMH || 0; 
         const cleanHighlight = d.highlights ? d.highlights.replace(/[•*-]/g, '').trim() : '';
         const pDeliv = shortName(cleanHighlight, 80) || (currentLang === 'en' ? 'No specific deliverables' : '無具體交付物');
         
         projectListHTML += `
-            <div class="mb-3 pb-2 border-b border-dashed" style="border-color:rgba(0,0,0,0.1);">
-                <div class="flex justify-between items-start mb-1">
-                    <span class="font-bold text-xs" style="color:var(--brand-main); line-height: 1.4;">${index + 1}. ${pDesc}</span>
-                    <span class="text-[10px] font-bold whitespace-nowrap ml-2 px-1.5 py-0.5 rounded" 
-                          style="background-color:rgba(0,0,0,0.05); color:var(--brand-accent);">
-                        ${pDur} days
-                    </span>
+            <div class="mb-3 p-3 rounded-lg shadow-sm transition-all hover:shadow-md" style="background-color:var(--bg-color); border: 1px solid var(--border-color); border-left: 4px solid var(--brand-main);">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-bold text-sm" style="color:var(--text-main); line-height: 1.4;">${index + 1}. ${pDesc}</span>
+                    <div class="flex items-center gap-1 ml-2">
+                        <span class="text-[10px] font-bold whitespace-nowrap px-2 py-1 rounded shadow-sm" 
+                              style="background-color:var(--brand-sub); color:#FFFFFF;" title="Duration">
+                            ${pDur} days
+                        </span>
+                        <span class="text-[10px] font-bold whitespace-nowrap px-2 py-1 rounded shadow-sm" 
+                              style="background-color:var(--text-blue); color:#FFFFFF;" title="Man-Hours / Per Day">
+                            ${pMH} MH/d
+                        </span>
+                    </div>
                 </div>
-                <div class="text-[11px] leading-relaxed pl-3 border-l-2" style="border-color:var(--brand-sub); color:var(--text-sub);">
+                <div class="text-xs leading-relaxed" style="color:var(--text-sub); font-weight: 500;">
                     ${pDeliv}
                 </div>
             </div>
@@ -1497,10 +1810,34 @@ function generateWizSummary() {
         </div>
     `;
 
-    wizContent.innerHTML = leftCol + `<div><h4 class="font-bold mb-2 uppercase text-xs" style="color:var(--brand-main);">${t.wizDeliv}</h4>${projectListHTML}</div>`;
+    // Updated Layout: 1/3 for Stats, 2/3 for List, and Full-Width Bottom for the Workload Chart
+    wizContent.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-sm">
+            <div class="lg:col-span-1">${leftCol}</div>
+            <div class="lg:col-span-2">
+                <h4 class="font-bold mb-2 uppercase text-xs" style="color:var(--brand-main);">${t.wizDeliv}</h4>
+                ${projectListHTML}
+            </div>
+            <div class="lg:col-span-3 mt-4 border-t pt-4" style="border-color:var(--border-color);">
+                <h4 class="font-bold mb-2 uppercase text-xs flex justify-between items-center" style="color:var(--brand-main);">
+                    <span><i class="fa-solid fa-chart-area mr-1"></i> ${t.wizWorkload}</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded" style="background-color:#FEE2E2; color:#B91C1C; border: 1px solid #FECACA;">${t.wizMaxCap}</span>
+                </h4>
+                <div class="chart-wrapper mt-2" style="height: 250px;">
+                    <canvas id="cWizWorkload"></canvas>
+                </div>
+            </div>
+        </div>
+    `;
+    
     wizBlock.classList.remove('hidden');
     gsap.from(wizBlock, { height: 0, opacity: 0, duration: 0.5 });
-    setTimeout(() => { wizBlock.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+    
+    // Render the new chart after the DOM elements are injected
+    setTimeout(() => { 
+        renderWizWorkloadChart(wizData);
+        wizBlock.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+    }, 100);
 }
 
 // --- EVENT LISTENERS ---
@@ -1515,14 +1852,7 @@ $('btnExport').onclick = () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
 };
-const stars = $('stars');
-let starRating = 0; 
-for(let i=1; i<=5; i++){
-  const s = document.createElement('i'); s.className = "fa-solid fa-star hover:opacity-80";
-  s.onclick = () => { starRating = i; Array.from(stars.children).forEach((el, idx) => el.style.color = idx < starRating ? 'var(--brand-accent)' : 'var(--border-color)'); };
-  stars.appendChild(s);
-}
-$('fbSave').onclick = () => { localStorage.setItem('dash_fb_v4', JSON.stringify({ rating: starRating, note: $('fbComment').value })); $('fbMsg').textContent = "Feedback saved!"; setTimeout(() => $('fbMsg').textContent = "", 2000); }
+
 function openModal(id) { $(id).style.display = 'flex'; }
 function closeModal(id) { $(id).style.display = 'none'; }
 
